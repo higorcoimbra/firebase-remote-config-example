@@ -5,14 +5,14 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 
 // override para não ter erro de handshake no Emulador quando usa o NetworkImage (NÃO USAR EM PRODUÇÃO)
-class MyHttpOverrides extends HttpOverrides{
+class MyHttpOverrides extends HttpOverrides {
   @override
-  HttpClient createHttpClient(SecurityContext? context){
+  HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port)=> true;
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
   }
 }
-
 
 Future<void> main() async {
   HttpOverrides.global = new MyHttpOverrides();
@@ -54,11 +54,18 @@ class _MyHomePageState extends State<MyHomePage> {
     _configureRemoteConfig();
   }
 
+  // encapsulei em um método pra já configurar tudo que precisa de uma vez, essa variável 'late' eu fiquei na dúvida se precisava mesmo
   void _configureRemoteConfig() async {
     remoteConfig = RemoteConfig.instance;
+    // toda variável tem que ter um default pra quando der timeout ou falha na conexão, podemos trocar por alguma variável de ambiente por exemplo
     remoteConfig.setDefaults(<String, dynamic>{
-      'img_link': 'https://logodownload.org/wp-content/uploads/2019/08/localiza-hertz-logo.png',
+      'img_link':
+          'https://logodownload.org/wp-content/uploads/2019/08/localiza-hertz-logo.png',
     });
+    /* 
+      * fetchTimeout é o timeout para trazer as variáveis do 'remoto'
+      * minimumFetchInterval é quanto tempo o app vai cachear as variáveis até o próximo fetch ser realizado
+    */
     await remoteConfig.setConfigSettings(RemoteConfigSettings(
       fetchTimeout: Duration(seconds: 10),
       minimumFetchInterval: Duration(seconds: 10),
@@ -66,7 +73,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _associateImgLink() async {
+    // fetchAndActivate irá trazer os valores do RemoteConfig 'remoto' e aplicá-los no app. Podem ser usados separados.
+    // se o retorno for true do fetchAndActivate, novos valores foram disponibilizados, da pra usar isso em alguma lógica se precisar
+    // não tenho certeza se numa função de setar estado é o melhor momento para realizar essa operação, acho que depende muito do uso.
     await remoteConfig.fetchAndActivate();
+    // os gets são os métodos de obter as variáveis do servidor ou do default
     String imgLink = remoteConfig.getString('img_link');
     setState(() {
       _imgLink = imgLink;
